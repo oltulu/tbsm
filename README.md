@@ -1,4 +1,4 @@
-## Terminal Based Session Manager
+## Terminal Tabanlı Oturum Yöneticisi
 
 **tbsm** is an application or session launcher, written in pure bash with no
 ncurses or dialog dependencies. It is inspired by cdm, tdm, in some way by
