@@ -36,9 +36,9 @@
 #   Consider http://wiki.bash-hackers.org/howto/collapsing_functions
 
 declare -r myName="tbsm"
-declare -r myLongName="Terminal Based Session Manager"
+declare -r myLongName="Komut Satırından Masaüstü Yöneticisi"
 declare -r myVersion="0.5" # Dez 2018
-declare -r myDescription="A pure bash session and application launcher"
+declare -r myDescription="Temiz bir bash oturumu ve uygulama başlatıcısı"
 declare -r systemConfigDir="/etc/xdg/${myName}"
 declare -r configDir="${HOME}/.config/${myName}"
 declare -r installPfad=""
@@ -146,7 +146,7 @@ popListIndex() {
     pushCommand "$argument"
     return 1
   elif [[ "$argument" -gt "${#linkList[@]}" ]]; then
-    error "${FUNCNAME[-2]:3}: Selection number too big: ${argument}"
+    error "${FUNCNAME[-2]:3}: Girilen rakam çok büyük: ${argument}"
     return 2
   fi
 
@@ -188,7 +188,7 @@ checkConfigDir() {
   [[ -d "${configDir}" ]] && return
 
   mkdir -p "${configDir}"/{blacklist,themes,whitelist}
-  info "Created config directory: ${configDir}"
+  info "Yapılandırma dizini oluşturuldu: ${configDir}"
 }
 
 readConfigFile() {
@@ -221,7 +221,7 @@ readConfigFile() {
   done
 
   if (( !$ok )); then
-    error "Config file not found: ${cfgFile##*/}"
+    error "Yapılandırma dosyası bulunamadı: ${cfgFile##*/}"
     error "+-Searched in: ${failPath[0]%/*}/"
     for path in ${failPath[@]:1}; do
       error "+------------: ${path%/*}/"
@@ -267,7 +267,7 @@ fillLists() {
     let missingSessionPfads+="$?"
   done
   if [[ $missingSessionPfads -eq  ${#sessionPfads[@]} ]]; then
-    warn "${FUNCNAME[0]}: No session paths found"
+    warn "${FUNCNAME[0]}: Hiçbir oturum yolu bulunamadı"
   fi
 
   readDesktopFiles "${configDir}/whitelist"
@@ -322,7 +322,7 @@ parseDesktopFiles() {
       # If which fails to return valid path, skip to next .desktop file.
       if [[ $? != 0 ]]
         then
-        warn "Skip '$nameKey' Binary found not: ${execKey%%[ ]*}"
+        warn "Skip '$nameKey' İkili bulunamadı: ${execKey%%[ ]*}"
         continue
       fi
       binList+=("${binItem} ${execKey#*${execKey%%[ ]*}}")
@@ -350,9 +350,9 @@ readDesktopFiles() {
     parseDesktopFiles
   else
     if [[ ${warnOnly} ]]; then
-      warn "${FUNCNAME[0]}: Path not found: ${filePfad}" "2"
+      warn "${FUNCNAME[0]}: Yol bulunamadı: ${filePfad}" "2"
     else
-      error "${FUNCNAME[0]}: Path not found: ${filePfad}"
+      error "${FUNCNAME[0]}: Yol bulunamadı: ${filePfad}"
     fi
     return 1
   fi
@@ -363,7 +363,7 @@ cmdSearch() {
   local -a desktopFiles
 
   if ! popArgument; then
-    error "${FUNCNAME[0]:3} needs a pattern"
+    error "${FUNCNAME[0]:3} bir desene ihtiyacı var"
     return 1
   fi
   pattern="$argument"
@@ -372,13 +372,13 @@ cmdSearch() {
 
   if [[ -d "${filePfad}" ]]; then
     desktopFiles=($(grep -Ril --include="*.desktop" "$pattern" "$filePfad" | sort))
-    info "Found matches: ${#desktopFiles[@]}"
+    info "Eşleşmeler bulundu: ${#desktopFiles[@]}"
     parseDesktopFiles
   else
-    error "${FUNCNAME[0]:3}: Pfad not found: ${filePfad}"
+    error "${FUNCNAME[0]:3}: Pfad bulunamadı: ${filePfad}"
   fi
 
-  print "Applications matching '$pattern'"
+  print "Eşleşen uygulamalar '$pattern'"
   printMenuList
 }
 
@@ -403,7 +403,7 @@ printMenuFooter() { printMenuSeparator; }
 
 printMenuList() {
   if [[ "${#nameList[@]}" == "0" ]]; then
-    print "  Nothing to list"
+    print "  Listelenecek bir şey yok"
     return
   fi
 
@@ -417,23 +417,23 @@ runSession() {
   local    bin=${binList[${listIndex}]}
   local    waylandSessionArgs
 
-  [[ ${listIndex} -lt 0 ]] && error "Session number too small" && return 1
-  [[ ${listIndex} -gt ${#nameList[@]}-1 ]] && error "Session number too big" && return 1
+  [[ ${listIndex} -lt 0 ]] && error "Oturum numarası çok küçük" && return 1
+  [[ ${listIndex} -gt ${#nameList[@]}-1 ]] && error "Oturum numarası çok büyük" && return 1
 
-  info "Run session: ${nameList[listIndex]}"
+  info "Oturumu çalıştır: ${nameList[listIndex]}"
 
   # Run $bin according to its flag.
   case ${flagList[${listIndex}]} in
     C)  # Console programs
-      info "Run command: ${bin[@]}"
+      info "Komut çalıştır: ${bin[@]}"
       ${bin[@]}
       ;;
     S)  # X Sessions
       if [[ $runInTTY ]]; then
-        info "Run command: startx ${bin[@]} -- ${XserverArg[@]}"
+        info "Komut çalıştır: startx ${bin[@]} -- ${XserverArg[@]}"
         startx ${bin[@]} -- ${XserverArg[@]}
       else
-        info "Not running in tty. Will not start X session." "0"
+        info "Tty'de değildiniz, bu nedenle X oturumunu başlatmayacak." "0"
         return 1
       fi
       ;;
@@ -441,16 +441,16 @@ runSession() {
       if [[ $runInTTY ]]; then
         [[ "${bin[@]}" =~ (^| )(/.*/)?dbus-run-session( |$) ]] ||
         waylandSessionArgs+=$(which dbus-run-session 2> /dev/null)
-        info "Run command: XDG_SESSION_TYPE=wayland ${waylandSessionArgs:+${waylandSessionArgs[@]} }${bin[@]}"
+        info "Komut çalıştır: XDG_SESSION_TYPE=wayland ${waylandSessionArgs:+${waylandSessionArgs[@]} }${bin[@]}"
         XDG_SESSION_TYPE=wayland ${waylandSessionArgs:+${waylandSessionArgs[@]} }${bin[@]}
       else
-        info "Not running in tty. Will not start Wayland session." "0"
+        info "Tty'de değildiniz, bu nedenle Wayland oturumunu başlatmayacak." "0"
         return 1
       fi
       ;;
     X)  # Applications
       if [[ $runInTTY ]]; then
-        info "Run command: startx ${bin[@]} -- ${XserverArg[@]}"
+        info "Komut çalıştır: startx ${bin[@]} -- ${XserverArg[@]}"
         startx ${bin[@]} -- ${XserverArg[@]}
       else
         info "Not running in tty, run: ${bin[@]}"
@@ -458,10 +458,10 @@ runSession() {
       fi
       ;;
     -)  # Old cdm/tdm stuff, not used
-      exitNormal "Have a nice day"
+      exitNormal "Hayırlı günler"
       ;;
     *)  # Old cdm/tdm stuff, should never happens
-      exitError "Unknown flag: ${flagList[${listIndex}]}"
+      exitError "Bilinmeyen bayrak: ${flagList[${listIndex}]}"
       ;;
   esac
 
@@ -528,7 +528,7 @@ addToList() {
 
   if (( !$ok )) ; then
     # FUNCNAME is a build in bash array. We cut leading 3 char "cmd"
-    error "${FUNCNAME[1]:3} need a valid session number"
+    error "${FUNCNAME[1]:3} geçerli bir oturum numarasına ihtiyacınız var"
     return 1
   fi
 }
@@ -556,7 +556,7 @@ removeFromList() {
       link=("$(readlink -m ${file})")
       if [[ "${link}" == "${linkList[${listIndex}]}" ]] ; then
         unlink "$file"
-        info "Session removed from ${list}: ${nameList[${listIndex}]}" "1"
+        info "Oturum, ${list} sayfasından kaldırıldı: ${nameList[${listIndex}]}" "1"
       fi
     done
     ok=1
@@ -565,7 +565,7 @@ removeFromList() {
 
   if (( !$ok || $err )) ; then
     # FUNCNAME is a build in bash array. We cut leading 3 char "cmd"
-    error "${FUNCNAME[1]:3} needs a valid session number"
+    error "${FUNCNAME[1]:3}geçerli bir oturum numarasına ihtiyacı var"
     return 1
   fi
 }
@@ -581,17 +581,17 @@ cmdBlacklist() {
 cmdDefault() {
   popListIndex
   case $? in
-    1) error "Command default needs a number"; return 1; ;;
+    1) error "Varsayılan komutun bir sayıya ihtiyacı var"; return 1; ;;
     2) return 1; ;;
   esac
 
   if [[ "${linkList[${listIndex}]}" == "-" ]]; then
-    warn "Session can't saved as default: ${nameList[${listIndex}]}"
+    warn "Oturum varsayılan olarak kaydedilemez: ${nameList[${listIndex}]}"
     return
   fi
 
   ln -sf -T "${linkList[${listIndex}]}" "${configDir}/000-default-session.desktop"
-  info "New default session: ${nameList[${listIndex}]}" "1"
+  info "Yeni varsayılan oturum: ${nameList[${listIndex}]}" "1"
   sleep 1
 }
 
@@ -604,13 +604,13 @@ cmdDoc() {
   docMatch=($(find "${docPath}" -not -type d -iname \*${argument}\* | sort))
 
   if [[ ${#docMatch[@]} -gt 1 ]]; then
-    print "Available documentation:"
+    print "Mevcut belgeler:"
     for doc in "${docMatch[@]}" ; do
       doc="${doc#*/??_}"
       print "  ${doc%.*}"
     done
   elif [[ -z "$docMatch" ]]; then
-      print "No manual match '${argument}'"
+      print "Uygun eşleşme yok '${argument}'"
   else
    less "$docMatch"
   fi
@@ -628,8 +628,8 @@ cmdHelp() {
   fi
 
   if [[ "${showFullHelp}" == "true" ]]; then
-    print "This is ${myName} (v${myVersion}) - ${myDescription}"
-    print "Usage:"
+    print "Bu ${myName} (v${myVersion}) - ${myDescription}"
+    print "Kullanımı:"
     print "${ind}${myName} [COMMAND [argument..]] [OPTION [argument..] ..]"
     print
     print "COMMANDs are:"
@@ -662,12 +662,12 @@ cmdHelp() {
     print "${ind}theme <name>${tab}${tab}Use given extra configuration file in <configDir>/theme/"
     print "${ind}verbose${tab}${tab}Tell me more"
     print
-    print "Examples:"
-    print "Run a session whose number you know"
+    print "Örnek:"
+    print "Numarasını bildiğiniz bir oturum açın"
     print "${ind}${myName} run 3"
-    print "Run with main menu and give a comprehensive feed back"
+    print "ana menü ile çalıştırın ve kapsamlı bir geri bildirim verin"
     print "${ind}${myName} --verbose"
-    print "Run with qick start menu"
+    print "Hızlı başlangıç ​​menüsü ile çalıştırın"
     print "${ind}${myName} quick-menu"
     #       print "${ind}${myName}"
     #       print "${ind}${tab}"
@@ -681,23 +681,23 @@ cmdList() {
   case "${argument}" in
     b)
       fillBlacklist
-      title="Black listed entries:"
+      title="Kara listedeki girişler:"
     ;;
     c)
       fillLists
-      title="Current configuration:"
+      title="Geçerli yapılandırma:"
     ;;
     w)
       clearLists
       readDesktopFiles "${configDir}/whitelist"
-      title="White listed entries:"
+      title="Beyaz listedeki girişler:"
     ;;
     *)
       if [[ "${#nameList[@]}" == "0" ]]; then
         pushCommand "list" "c"
         return
       else
-        title="Currently loaded list:"
+        title="Şu anda yüklü liste:"
       fi
     ;;
   esac
@@ -731,7 +731,7 @@ cmdQMenu() {
 cmdRun() {
   popListIndex
   case $? in
-    1) error "Command run needs a number"; return 1; ;;
+    1) error "Komut çalıştırmank için bir sayıya ihtiyacı var"; return 1; ;;
     2) return 1; ;;
   esac
 
@@ -755,7 +755,7 @@ cmdWhitelist() {
   case "$1" in
     add)    addToList "whitelist"; ;;
     remove) removeFromList "whitelist"; ;;
-    *)      exitError "FATAL: Not handeld by cmdWhitelist: $1"; ;;
+    *)      exitError "ÖNEMLİ: cmdWhitelist tarafından ele alınmaz: $1"; ;;
   esac
 }
 
@@ -843,7 +843,7 @@ find "$configDir" -type l -exec test ! -e {} \; -exec unlink {} \;
 readConfigFile
 hasOption "theme" && theme=$(parmOfOption "theme")
 if [[ -n "${theme}" ]]; then
-  readConfigFile "themes/${theme}" && info "Use theme: ${theme}"
+  readConfigFile "themes/${theme}" && info "Temayı kullan: ${theme}"
 fi
 
 # FIXME: Do you know a way to "re-eval" strings with variables in it so we can
@@ -922,7 +922,7 @@ do
     [bw][1-9])      pushCommand ${command:0:1} ${command:1}     ; ;;
    -[bw][1-9])      pushCommand ${command:0:2} ${command:2}     ; ;;
 
-    *)              error "Unknown command: ${command}"         ; ;;
+    *)              error "Bilinmeyen komut: ${command}"         ; ;;
   esac
 
   prompt
